@@ -1,0 +1,32 @@
+﻿@page "/logout"
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Mvc
+@using System.Security.Claims
+@inject NavigationManager router
+@inject SignInManager<IdentityUser> SignInManager
+@inject UserManager<IdentityUser> _user
+@inject RevalidatingIdentityAuthenticationStateProvider<IdentityUser> _rev
+@code {
+
+    protected override async Task OnInitializedAsync()
+    {
+        await OnPost();
+    }
+
+
+    public async Task OnPost()
+    {
+        try
+        {
+            var usr = new IdentityUser();
+            var claim = await _user.GetClaimsAsync(usr);
+            var state = new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity(claim)));
+          
+            router.NavigateTo("/");
+        }
+        catch(Exception e)
+        {
+            Console.WriteLine(e);
+        }
+    }
+}

@@ -1,0 +1,171 @@
+﻿@layout AuthLayout
+@page "/"
+@using System.Security.Claims
+@inject NavigationManager router
+@inject UserManager<IdentityUser> _user
+@inject SignInManager<IdentityUser> _sign
+@inject RevalidatingIdentityAuthenticationStateProvider<IdentityUser> _rev
+
+<div class=" d-flex flex-column bg-white">
+    <div class="row g-0 flex-fill">
+      <div class="col-12 col-lg-6 col-xl-4 border-top-wide border-primary d-flex flex-column justify-content-center">
+        <div class="container container-tight my-5 px-lg-5">
+          <div class="text-center mb-4">
+            <a href="." class="navbar-brand navbar-brand-autodark"><img src="/logo.png" height="36" alt=""></a>
+          </div>
+                <h2 class="h3 text-center mb-3">
+                    Xpress <span style="color:red;">Ecashier</span>
+                </h2>
+                <hr />
+          <h4 class="h3 text-center mb-3">
+            Login to your account
+          </h4>
+          <EditForm Model="model" autocomplete="off" OnSubmit="@OnPost">
+              @if(Error != null)
+              {
+                        <span style="color:red;">@Error</span>
+              }
+            <div class="mb-3">
+              <label class="form-label">Username</label>
+              <InputText @bind-Value="@Email" type="email" class="form-control" placeholder="Enter your username" autocomplete="off" required/>
+            </div>
+            <div class="mb-2">
+              <label class="form-label">
+                Password
+              </label>
+              <div class="input-group input-group-flat">
+            <InputText @bind-Value="@Password" type="@Visible" class="form-control" placeholder="Enter your password" autocomplete="off" required />
+                <span class="input-group-text">
+             <button @onclick="@(()=> ChangeVisibility())" class="btn btn-rounded btn-default" title="Show password" data-bs-toggle="tooltip">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M22 12c-2.667 4.667 -6 7 -10 7s-7.333 -2.333 -10 -7c2.667 -4.667 6 -7 10 -7s7.333 2.333 10 7" /></svg>
+                  </button>
+                </span>
+              </div>
+            </div>
+            <div class="mb-2">
+                <label class="form-label">
+                    OTP Token
+                </label>
+                <div class="input-group input-group-flat">
+                    <InputText @bind-Value="@Password" type="password" class="form-control" placeholder="Enter your OTP" autocomplete="off" required />
+                </div>
+            </div>
+
+            <div class="mb-2">
+              <label class="form-check">
+                <InputCheckbox @bind-Value="@Remeber" type="checkbox" class="form-check-input"/>
+                <span class="form-check-label">Remember me on this device</span>
+              </label>
+            </div>
+            <div class="form-footer">
+              <button type="submit" class="btn btn-primary w-100">Sign in</button>
+            </div>
+          </EditForm>
+          
+        </div>
+      </div>
+      <div class="col-12 col-lg-6 col-xl-8 d-none d-lg-block">
+        <!-- Photo -->
+            <div class="bg-cover h-100 min-vh-100" style="background-image: url('/static/josh-appel-NeTPASr-bmQ-unsplash.jpg');"></div>
+      </div>
+    </div>
+</div>
+
+
+@code {
+    public string Email;
+    public bool Remeber;
+    public string Password;
+    public string Error;
+    public string Visible = "password";
+    public IdentityUser model = new();
+
+
+    /**********************************************************/
+     /*
+     * Description: this medthod is called once the component is rendered
+     * output: void
+    */
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+    }
+    /**********************************************************/
+
+
+
+     /**********************************************************/
+    /*
+     * Description: this medthod changes the visibility of the password
+     * output: void
+     */
+    void ChangeVisibility()
+    {
+        if (Visible == "password")
+            Visible = "text";
+       else
+       {
+            Visible = "password";
+       }
+    }
+    /**********************************************************/
+
+   
+
+    /**********************************************************/
+    /*
+     * Description: this medthod fetchs a new AuthenticationState for the user
+     * output: Task<AuthenticationState>
+     */
+    public async Task<AuthenticationState> FetchAuthState(IdentityUser usr)
+    {
+        var state = new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity(await _user.GetClaimsAsync(usr))));
+
+        return state;
+    }
+    /**********************************************************/
+
+
+
+/**********************************************************/
+/*
+* Description: this medthod authenticate the user, then redirects to dashboard
+* output: Task
+*/
+    public async Task OnPost()
+    {
+        try
+        {
+            if(Email != null)
+            {
+                var usr = await _user.FindByEmailAsync(Email);
+
+                if(usr != null)
+                {
+                    var sign = await _sign.CheckPasswordSignInAsync(usr, Password, false);
+                    if (sign.Succeeded)
+                    {
+                        var claim = await _user.GetClaimsAsync(usr);
+                        var state = new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity(claim)));
+                        _rev.SetAuthenticationState(FetchAuthState(usr));
+                        router.NavigateTo("/dashboard");
+                    }
+                    else
+                    {
+                        Error = "Invalid Authentication";
+                    }
+               }
+               else
+               {
+                    Error = "Invalid Authentication";
+               }
+            }
+       
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+    }
+/**********************************************************/
+}
